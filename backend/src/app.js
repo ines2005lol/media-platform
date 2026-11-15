@@ -1,28 +1,22 @@
 const express = require("express");
+const apiRoutes = require("./routes");
+const { notFound, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 
 // Parse incoming JSON request bodies (available as req.body)
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
 // Health-check route
 app.get("/", (req, res) => {
   res.send("Media Platform API is running!!!!");
 });
 
-// 404 handler: runs when no route above matched
-app.use((req, res) => {
-  res.status(404).json({ error: "Not found" });
-});
+// All API endpoints live under /api
+app.use("/api", apiRoutes);
 
-// Centralized error handler: Express recognizes it by its 4 arguments.
-// In Express 5, errors thrown in async route handlers also end up here.
-app.use((err, req, res, next) => {
-  console.error(err);
-  const status = err.status || 500;
-  res.status(status).json({
-    error: status === 500 ? "Internal server error" : err.message,
-  });
-});
+// 404 for unmatched routes, then centralized error handling
+app.use(notFound);
+app.use(errorHandler);
 
 module.exports = app;

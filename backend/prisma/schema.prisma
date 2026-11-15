@@ -1,0 +1,157 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+// Users & their data
+// ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username     String   @unique @db.VarChar(30) // stored lowercase (CHECK added in migration)
+  email        String   @unique @db.VarChar(255) // stored lowercase (CHECK added in migration)
+  passwordHash String   @map("password_hash") @db.Text // hash only, never plaintext
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  collections Collection[]
+  preferences UserPreference[]
+  savedMedia  UserSavedMedia[]
+
+  @@map("users")
+}
+
+model Collection {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String   @db.VarChar(50)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items CollectionMedia[]
+
+  // Collection names are unique per user (also serves as the index on user_id)
+  @@unique([userId, name])
+  @@map("collections")
+}
+
+model CollectionMedia {
+  collectionId String   @map("collection_id") @db.Uuid
+  mediaId      String   @map("media_id") @db.Uuid
+  addedAt      DateTime @default(now()) @map("added_at") @db.Timestamptz(6)
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  media      Media      @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, mediaId])
+  @@index([mediaId])
+  @@map("collection_media")
+}
+
+model UserPreference {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  mediaId        String   @map("media_id") @db.Uuid
+  preferenceType String   @map("preference_type") @db.VarChar(10) // LIKE | DISLIKE (CHECK added in migration)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  // One verdict (LIKE or DISLIKE) per user per media item
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@map("user_preferences")
+}
+
+model UserSavedMedia {
+  id      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId  String   @map("user_id") @db.Uuid
+  mediaId String   @map("media_id") @db.Uuid
+  savedAt DateTime @default(now()) @map("saved_at") @db.Timestamptz(6)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  // A user can save a media item only once
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@map("user_saved_media")
+}
+
+// ─────────────────────────────────────────────
+// Shared media catalogue
+// ─────────────────────────────────────────────
+
+model Media {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String    @db.VarChar(255)
+  description String?   @db.Text
+  releaseDate DateTime? @map("release_date") @db.Date
+  posterUrl   String?   @map("poster_url") @db.Text
+  type        String    @db.VarChar(20) // MOVIE | TV_SHOW (CHECK added in migration)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  movieDetails    MovieDetails?
+  tvShowDetails   TVShowDetails?
+  genres          MediaGenre[]
+  collectionItems CollectionMedia[]
+  preferences     UserPreference[]
+  savedBy         UserSavedMedia[]
+
+  @@index([type])
+  @@map("media")
+}
+
+model MovieDetails {
+  mediaId  String @id @map("media_id") @db.Uuid
+  duration Int // minutes
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@map("movie_details")
+}
+
+model TVShowDetails {
+  mediaId          String @id @map("media_id") @db.Uuid
+  numberOfSeasons  Int    @map("number_of_seasons")
+  numberOfEpisodes Int    @map("number_of_episodes")
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@map("tv_show_details")
+}
+
+model Genre {
+  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String @unique @db.VarChar(50)
+
+  media MediaGenre[]
+
+  @@map("genres")
+}
+
+model MediaGenre {
+  mediaId String @map("media_id") @db.Uuid
+  genreId String @map("genre_id") @db.Uuid
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  genre Genre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([mediaId, genreId])
+  @@index([genreId])
+  @@map("media_genres")
+}
