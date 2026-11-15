@@ -2,7 +2,7 @@ const prisma = require("../config/prisma");
 const HttpError = require("../utils/httpError");
 const { verifyToken } = require("../utils/token");
 
-const publicUserSelect = { id: true, username: true, email: true, createdAt: true };
+const publicUserSelect = { id: true, username: true, email: true, createdAt: true }; //which user infos we want to retreive from the database
 
 function readBearerToken(req) {
   const header = req.get("authorization") || "";
