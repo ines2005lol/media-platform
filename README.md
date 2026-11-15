@@ -1,0 +1,132 @@
+# Media Discovery Platform
+
+A full-stack web app for discovering movies and TV shows: browse and search a catalogue, like or dislike titles, save them to a personal library, organise them into collections, and get recommendations based on your tastes.
+
+> **Status:** work in progress. Accounts, browsing, search and title details work end to end (React frontend + API). Likes, library, collections and recommendations are in development.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + Vite, React Router (JavaScript) |
+| Backend | Node.js, Express 5 (CommonJS) |
+| Database | PostgreSQL |
+| ORM | Prisma 7 with the `@prisma/adapter-pg` driver adapter |
+| Auth | JWT (`jsonwebtoken`), passwords hashed with Node's built-in `scrypt` |
+| Tests | Node's built-in test runner (`node:test`) against a real test database |
+
+No paid services or external APIs are required.
+
+## Features so far
+
+- **Accounts:** register, log in, get the current user. Usernames and emails are stored in lowercase; passwords are never stored in plain text.
+- **Catalogue:** browse movies and TV shows with search (title and description), filters (type, genre), sorting (title, newest, oldest) and pagination.
+- **Details:** full information for a title, including runtime (movies) or seasons and episodes (TV shows). Signed-in users also see their own like/save state.
+- **Genres:** list of genres with the number of titles in each.
+- **Seed data:** a starter catalogue of 39 real, well-known titles across 15 genres.
+
+## Project structure
+
+```
+media_platform/
+├── docs/database/          ERD (draw.io)
+├── frontend/
+│   └── src/
+│       ├── api/            fetch wrapper for the backend API
+│       ├── context/        login state (AuthContext)
+│       ├── components/     layout, cards, posters
+│       ├── pages/          Browse, Details, Login, Register
+│       └── utils/          formatting helpers
+└── backend/
+    ├── prisma/             schema, migrations, seed script
+    ├── scripts/            helper scripts (test database migration)
+    ├── src/
+    │   ├── app.js          Express app setup (middleware, routes, error handling)
+    │   ├── server.js       starts the server
+    │   ├── config/         environment variables and Prisma client
+    │   ├── routes/         URL → controller mapping
+    │   ├── controllers/    read the request, send the response
+    │   ├── services/       business logic and database queries
+    │   ├── middleware/     authentication and error handling
+    │   └── utils/          validation, password hashing, tokens
+    └── tests/              API integration tests
+```
+
+## Getting started
+
+### Prerequisites
+- Node.js 22 or later
+- PostgreSQL running locally
+
+### 1. Install
+```bash
+cd backend
+npm install
+npx prisma generate
+```
+
+### 2. Configure
+Create two empty PostgreSQL databases (for example `media_platform` and `media_platform_test`), then copy `backend/.env.example` to `backend/.env` and fill in:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | Your development database |
+| `TEST_DATABASE_URL` | A separate database used by the tests (it is wiped on every run) |
+| `JWT_SECRET` | A long random string used to sign login tokens |
+| `JWT_EXPIRES_IN` | How long a login lasts, e.g. `7d` |
+| `PORT` | API port (default `3000`) |
+
+Generate a secret with:
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+### 3. Set up the databases
+```bash
+npx prisma migrate deploy   # development database
+npm run db:migrate:test     # test database
+npm run db:seed             # load the starter catalogue
+```
+
+### 4. Run
+Open two terminals:
+
+```bash
+# Terminal 1 — API on http://localhost:3000
+cd backend
+npm run dev
+
+# Terminal 2 — website on http://localhost:5173
+cd frontend
+npm install
+npm run dev
+```
+
+Then open **http://localhost:5173**. The frontend forwards `/api` requests to the backend (see `frontend/vite.config.js`), so both must be running.
+
+Run the backend tests with `npm test` in `backend/`.
+
+## API overview
+
+All endpoints are under `/api`. Protected endpoints need the header `Authorization: Bearer <token>`.
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | – | Create an account, returns a token |
+| POST | `/api/auth/login` | – | Log in, returns a token |
+| GET | `/api/auth/me` | ✔ | Current user |
+| GET | `/api/media` | – | Browse/search: `search`, `type` (`MOVIE`/`TV_SHOW`), `genre` (name or id), `sort` (`title`/`newest`/`oldest`), `page`, `limit` |
+| GET | `/api/media/:id` | optional | Title details (+ your like/save state when signed in) |
+| GET | `/api/genres` | – | All genres with title counts |
+
+Errors are returned as JSON: `{ "error": "message", "details": { "field": "problem" } }`.
+
+## Database
+
+The schema is designed from the ERD in `docs/database/`. Key decisions:
+- UUID primary keys generated by PostgreSQL (`gen_random_uuid()`).
+- Every title has exactly one detail record: `MovieDetails` or `TVShowDetails`.
+- A user has at most one preference (LIKE or DISLIKE) per title and can save a title once; saving and liking are independent.
+- Collection names are unique per user.
+- Deleting a user removes their own data but never the shared catalogue.
+- CHECK constraints (lowercase emails/usernames, valid types, positive numbers) are enforced in the migration.
