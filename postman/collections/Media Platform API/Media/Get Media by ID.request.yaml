@@ -1,0 +1,7 @@
+$kind: http-request
+method: GET
+url: '{{base_url}}/api/media/{{media_id}}'
+order: 2000
+pathVariables:
+  - key: media_id
+    value: '1'

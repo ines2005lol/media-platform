@@ -4,6 +4,11 @@ const { notFound, errorHandler } = require("./middleware/errorHandler");
 
 const app = express();
 
+const morgan = require("morgan");
+
+app.use(morgan("dev"));
+
+
 // Parse incoming JSON request bodies (available as req.body)
 app.use(express.json({ limit: "100kb" }));
 
