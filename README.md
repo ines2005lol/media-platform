@@ -135,7 +135,7 @@ All endpoints are under `/api`. Protected endpoints need the header `Authorizati
 | PUT | `/api/collections/:id/items/:mediaId` | ✔ | Add a title (adding twice is fine) |
 | DELETE | `/api/collections/:id/items/:mediaId` | ✔ | Remove a title (204) |
 
-All `DELETE` endpoints are idempotent: removing something that is already gone still returns 204.
+All `DELETE` endpoints are idempotent: removing something that is already gone still returns 204
 
 Errors are returned as JSON: `{ "error": "message", "details": { "field": "problem" } }`.
 
