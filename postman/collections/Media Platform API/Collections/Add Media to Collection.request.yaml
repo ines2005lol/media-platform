@@ -1,0 +1,4 @@
+$kind: http-request
+method: PUT
+url: '{{base_url}}/api/collections/{{collection_id}}/items/{{media_id}}'
+order: 5000

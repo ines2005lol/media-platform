@@ -1,0 +1,12 @@
+$kind: http-request
+method: PUT
+url: '{{base_url}}/api/media/{{media_id}}/preference'
+order: 1000
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "type": "LIKE"
+    }

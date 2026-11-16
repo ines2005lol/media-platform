@@ -22,6 +22,8 @@ export default function Layout() {
             {!loading &&
               (user ? (
                 <>
+                  <NavLink to="/library">Library</NavLink>
+                  <NavLink to="/collections">Collections</NavLink>
                   <span className="nav-user">Hi, {user.username}</span>
                   <button type="button" className="btn btn-ghost" onClick={handleLogout}>
                     Log out

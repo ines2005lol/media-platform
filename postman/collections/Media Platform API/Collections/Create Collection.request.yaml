@@ -1,0 +1,21 @@
+$kind: http-request
+method: POST
+url: '{{base_url}}/api/collections'
+order: 2000
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Weekend watch",
+      "description": "Easy picks for Friday night"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      const json = pm.response.json();
+      if (json?.id) {
+          pm.environment.set("collection_id", json.id);
+      }

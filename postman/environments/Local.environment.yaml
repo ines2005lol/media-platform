@@ -4,3 +4,7 @@ values:
     value: 'http://localhost:3000'
   - key: access_token
     value: ''
+  - key: media_id
+    value: ''
+  - key: collection_id
+    value: ''

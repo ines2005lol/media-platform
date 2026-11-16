@@ -1,0 +1,4 @@
+$kind: http-request
+method: DELETE
+url: '{{base_url}}/api/media/{{media_id}}/save'
+order: 2000

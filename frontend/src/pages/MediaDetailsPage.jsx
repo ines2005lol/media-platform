@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import Poster from "../components/Poster.jsx";
+import MediaActions from "../components/MediaActions.jsx";
 import { formatDate, formatDuration, plural, releaseYear, typeLabel } from "../utils/format.js";
 
 export default function MediaDetailsPage() {
@@ -63,6 +64,8 @@ export default function MediaDetailsPage() {
               </Link>
             ))}
           </div>
+
+          <MediaActions mediaId={media.id} viewer={media.viewer} />
 
           {media.description && <p className="description">{media.description}</p>}
 

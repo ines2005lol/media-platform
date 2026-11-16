@@ -1,0 +1,12 @@
+$kind: http-request
+method: PATCH
+url: '{{base_url}}/api/collections/{{collection_id}}'
+order: 4000
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Weekend favourites"
+    }

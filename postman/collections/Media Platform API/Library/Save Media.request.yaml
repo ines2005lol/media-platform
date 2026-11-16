@@ -1,0 +1,4 @@
+$kind: http-request
+method: PUT
+url: '{{base_url}}/api/media/{{media_id}}/save'
+order: 1000
