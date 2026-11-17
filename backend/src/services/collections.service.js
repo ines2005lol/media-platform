@@ -60,7 +60,11 @@ async function ensureNameAvailable(userId, name, exceptId) {
   }
 }
 
-// Other users' collections answer 404, so their existence is not revealed
+// Other users' collections answer 404, so their existence is not revealed. 
+//It doesn't just check whether the collection exists. It checks whether it belongs to the authenticated user.
+//A creat collection ID 12, B try to modify collection ID 12. -> 404
+// authorization ! Are you allowed to perform this action? 
+
 async function findOwnCollection(userId, collectionId) {
   const collection = await prisma.collection.findFirst({
     where: { id: collectionId, userId },
