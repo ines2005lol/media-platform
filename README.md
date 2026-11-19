@@ -14,6 +14,7 @@ A full-stack web app for discovering movies and TV shows: browse and search a ca
 | ORM | Prisma 7 with the `@prisma/adapter-pg` driver adapter |
 | Auth | JWT (`jsonwebtoken`), passwords hashed with Node's built-in `scrypt` |
 | Tests | Node's built-in test runner (`node:test`) against a real test database |
+| Containers | Docker (backend image) |
 
 No paid services or external APIs are required.
 
@@ -52,7 +53,9 @@ media_platform/
     │   ├── services/       business logic and database queries
     │   ├── middleware/     authentication and error handling
     │   └── utils/          validation, password hashing, tokens
-    └── tests/              API integration tests
+    ├── tests/              API integration tests
+    ├── Dockerfile          container image for the API
+    └── .dockerignore       files kept out of the image
 ```
 
 ## Getting started
@@ -108,6 +111,56 @@ npm run dev
 Then open **http://localhost:5173**. The frontend forwards `/api` requests to the backend (see `frontend/vite.config.js`), so both must be running.
 
 Run the backend tests with `npm test` in `backend/`.
+
+## Running the backend with Docker
+
+The API can also run in a container, built from [`backend/Dockerfile`](backend/Dockerfile). The database is **not** part of the image: the container connects to a PostgreSQL server you already have.
+
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- PostgreSQL running, with migrations applied (step 3 of [Getting started](#3-set-up-the-databases)). The image does not include the Prisma CLI, so run migrations from your machine.
+
+### Build the image
+```bash
+cd backend
+docker build -t media-platform-backend .
+```
+
+### Run the container
+Replace the placeholders (`USER`, `PASSWORD`, the secret) with your own values:
+
+```bash
+docker run --rm --init -p 3000:3000 -e DATABASE_URL="postgresql://USER:PASSWORD@host.docker.internal:5432/media_platform" -e JWT_SECRET="your-long-random-secret" media-platform-backend
+```
+
+The API is then available at **http://localhost:3000**.
+
+| Option | What it does |
+|---|---|
+| `--rm` | Deletes the container when it stops |
+| `--init` | Forwards stop signals to Node so `docker stop` shuts the app down cleanly |
+| `-p 3000:3000` | Maps port 3000 on your computer to port 3000 in the container |
+| `-e NAME=value` | Passes an environment variable at runtime |
+
+Environment variables:
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | yes | Use `host.docker.internal` instead of `localhost` (see below) |
+| `JWT_SECRET` | yes | Long random string |
+| `JWT_EXPIRES_IN` | no | Defaults to `7d` |
+| `PORT` | no | Defaults to `3000`; change the `-p` mapping to match |
+
+### Things to know
+- **`localhost` inside a container means the container itself.** To reach PostgreSQL running on your computer, use `host.docker.internal` as the host (Docker Desktop on Windows and macOS). Keep the same port your database uses.
+- **No secrets are stored in the image.** `.env` is excluded by [`backend/.dockerignore`](backend/.dockerignore); all configuration is supplied with `-e` when the container starts.
+- **A 500 error on database routes while `/` works** usually means `DATABASE_URL` is wrong (bad credentials or host). Check the logs with `docker logs <container>`.
+
+### How the image is built
+- **Two stages:** the first installs all dependencies and runs `prisma generate`; the second installs production dependencies only and copies in just the generated Prisma Client. The Prisma CLI and dev tools never reach the final image.
+- **Base image:** `node:22-bookworm-slim`, the same Node version as CI.
+- **Runs as the non-root `node` user**; application files are owned by root, so the app cannot modify its own code.
+- Tests, `.env`, `node_modules` and editor files are excluded from the build by `.dockerignore`.
 
 ## API overview
 
