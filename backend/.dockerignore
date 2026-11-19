@@ -1,0 +1,27 @@
+# Dependencies are installed fresh inside the image (and Windows builds won't run on Linux)
+node_modules
+npm-debug.log*
+
+# Secrets: environment variables are supplied at runtime, never baked into the image
+.env
+.env.*
+
+# Tests run in CI, not in the production image
+tests
+
+# Docker files themselves
+Dockerfile
+.dockerignore
+
+# Git and editor / AI-assistant tooling
+.git
+.gitignore
+.agents
+.claude
+.cursor
+.devin
+.windsurf
+skills-lock.json
+
+# Unused leftover stub (the real entry point is src/server.js)
+server.js
